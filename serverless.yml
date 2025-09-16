@@ -1,15 +1,15 @@
 # org: nalbam
-app: lambda-slack-ai-bot
-service: lambda-slack-ai-bot
+app: lambda-chatgpt-ai-bot
+service: lambda-chatgpt-ai-bot
 provider:
   name: aws
   region: us-east-1
   runtime: python3.12
   stage: ${opt:stage, 'dev'}
   memorySize: 5120
-  timeout: 29
+  timeout: 60
   environment:
-    BASE_NAME: slack-ai-bot
+    BASE_NAME: chatgpt-ai-bot
   iamRoleStatements:
     - Effect: Allow
       Action:

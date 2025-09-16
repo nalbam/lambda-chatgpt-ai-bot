@@ -10,7 +10,7 @@ on:
 
 env:
   AWS_REGION: "us-east-1"
-  AWS_ROLE_NAME: "lambda-slack-ai-bot"
+  AWS_ROLE_NAME: "lambda-chatgpt-ai-bot"
 
   STAGE: "v2"
 

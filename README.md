@@ -1,4 +1,4 @@
-# lambda-slack-ai-bot
+# lambda-chatgpt-ai-bot
 
 안녕하세요! 저는 AI 어시스턴트입니다.
 여러분의 질문에 답변하고 다양한 문제를 해결하는 데 도움을 드리기 위해 만들어졌습니다.

@@ -13,7 +13,7 @@
       "Action": [
         "cloudformation:*"
       ],
-      "Resource": "arn:aws:cloudformation:*:*:stack/lambda-slack-ai-bot-*"
+      "Resource": "arn:aws:cloudformation:*:*:stack/lambda-chatgpt-ai-bot-*"
     },
     {
       "Effect": "Allow",
@@ -21,8 +21,8 @@
         "lambda:*"
       ],
       "Resource": [
-        "arn:aws:lambda:*:*:function:lambda-slack-ai-bot-*",
-        "arn:aws:lambda:*:*:function:gurumi-ai-bot-*"
+        "arn:aws:lambda:*:*:function:lambda-chatgpt-ai-bot-*",
+        "arn:aws:lambda:*:*:function:chatgpt-ai-bot-*"
       ]
     },
     {
@@ -30,7 +30,7 @@
       "Action": [
         "iam:*"
       ],
-      "Resource": "arn:aws:iam::*:role/lambda-slack-ai-bot-*"
+      "Resource": "arn:aws:iam::*:role/lambda-chatgpt-ai-bot-*"
     },
     {
       "Effect": "Allow",
@@ -38,8 +38,8 @@
         "s3:*"
       ],
       "Resource": [
-        "arn:aws:s3:::lambda-slack-ai-bot-*",
-        "arn:aws:s3:::gurumi-ai-bot-*"
+        "arn:aws:s3:::lambda-chatgpt-ai-bot-*",
+        "arn:aws:s3:::chatgpt-ai-bot-*"
       ]
     },
     {
@@ -48,8 +48,8 @@
         "dynamodb:*"
       ],
       "Resource": [
-        "arn:aws:dynamodb:*:*:table/lambda-slack-ai-bot-*",
-        "arn:aws:dynamodb:*:*:table/gurumi-ai-bot-*"
+        "arn:aws:dynamodb:*:*:table/lambda-chatgpt-ai-bot-*",
+        "arn:aws:dynamodb:*:*:table/chatgpt-ai-bot-*"
       ]
     }
   ]

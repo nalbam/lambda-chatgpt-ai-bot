@@ -1,7 +1,7 @@
 # aws role
 
 ```bash
-export NAME="lambda-slack-ai-bot"
+export NAME="lambda-chatgpt-ai-bot"
 ```
 
 ## create role
@@ -44,7 +44,7 @@ aws iam attach-role-policy --role-name "${NAME}" --policy-arn "${POLICY_ARN}"
       - name: configure aws credentials
         uses: aws-actions/configure-aws-credentials@v1.7.0
         with:
-          role-to-assume: "arn:aws:iam::968005369378:role/lambda-slack-ai-bot"
+          role-to-assume: "arn:aws:iam::968005369378:role/lambda-chatgpt-ai-bot"
           role-session-name: github-actions-ci-bot
           aws-region: ${{ env.AWS_REGION }}
 

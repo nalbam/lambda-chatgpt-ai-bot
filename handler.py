@@ -20,7 +20,7 @@ SLACK_BOT_TOKEN = os.environ["SLACK_BOT_TOKEN"].strip()
 SLACK_SIGNING_SECRET = os.environ["SLACK_SIGNING_SECRET"].strip()
 
 # Keep track of conversation history by thread and user
-DYNAMODB_TABLE_NAME = os.environ.get("DYNAMODB_TABLE_NAME", "slack-ai-bot-dev").strip()
+DYNAMODB_TABLE_NAME = os.environ.get("DYNAMODB_TABLE_NAME", "chatgpt-ai-bot-dev").strip()
 
 # Set up ChatGPT API credentials
 OPENAI_ORG_ID = os.environ["OPENAI_ORG_ID"].strip()
