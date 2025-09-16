@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - master
   repository_dispatch:
     types:
       - deploy
@@ -13,10 +12,9 @@ env:
   AWS_REGION: "us-east-1"
   AWS_ROLE_NAME: "lambda-chatgpt-ai-bot"
 
-  STAGE: "prod"
+  STAGE: "dev"
 
   BOT_CURSOR: ${{ vars.BOT_CURSOR }}
-  DYNAMODB_TABLE_NAME: ${{ vars.DYNAMODB_TABLE_NAME }}
   IMAGE_MODEL: ${{ vars.IMAGE_MODEL }}
   OPENAI_MODEL: ${{ vars.OPENAI_MODEL }}
   SYSTEM_MESSAGE: ${{ vars.SYSTEM_MESSAGE }}
@@ -63,7 +61,6 @@ jobs:
         run: |
           echo "STAGE=${STAGE}" >> .env
           echo "BOT_CURSOR=${BOT_CURSOR}" >> .env
-          echo "DYNAMODB_TABLE_NAME=${DYNAMODB_TABLE_NAME}" >> .env
           echo "IMAGE_MODEL=${IMAGE_MODEL}" >> .env
           echo "OPENAI_API_KEY=${OPENAI_API_KEY}" >> .env
           echo "OPENAI_MODEL=${OPENAI_MODEL}" >> .env
