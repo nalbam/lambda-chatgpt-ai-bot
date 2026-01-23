@@ -61,13 +61,28 @@ SLACK_BOT_TOKEN="xoxb-xxxx"
 SLACK_SIGNING_SECRET="xxxx"
 ```
 
-### OpenAi API
+### OpenAI API
 
 * <https://platform.openai.com/account/api-keys>
 
 ```bash
 OPENAI_ORG_ID="org-xxxx"
 OPENAI_API_KEY="sk-xxxx"
+OPENAI_MODEL="gpt-4.1"
+IMAGE_MODEL="dall-e-3"
+```
+
+### Optional Settings
+
+```bash
+BOT_CURSOR=":robot_face:"
+DYNAMODB_TABLE_NAME="chatgpt-ai-bot-dev"
+IMAGE_SIZE="1024x1024"
+SYSTEM_MESSAGE="Your custom system prompt"
+MAX_LEN_SLACK=3000
+MAX_LEN_OPENAI=4000
+KEYWARD_IMAGE="그려줘"
+KEYWARD_EMOJI="이모지"
 ```
 
 ## Deployment

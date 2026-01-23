@@ -49,7 +49,7 @@ sls deploy --stage prod --region us-east-1
 ### Key Functions Flow
 
 1. **Slack Event Reception**: Lambda receives POST from Slack at `/slack/events`
-2. **Message Processing**: `handle_app_mentions` or `handle_im` processes the message
+2. **Message Processing**: `handle_mention` or `handle_message` processes the message
 3. **Context Management**: DynamoDB stores conversation history by thread/user
 4. **AI Processing**:
    - Text: Sends conversation history to OpenAI chat completion
@@ -63,7 +63,14 @@ Critical configuration in `.env`:
 - `OPENAI_API_KEY`, `OPENAI_ORG_ID` - OpenAI credentials
 - `OPENAI_MODEL` (default: gpt-4.1) - Chat model selection
 - `IMAGE_MODEL` (default: dall-e-3) - Image generation model
+- `IMAGE_SIZE` (default: 1024x1024) - Generated image size
 - `DYNAMODB_TABLE_NAME` - Conversation storage table
+- `BOT_CURSOR` (default: :robot_face:) - Loading indicator emoji
+- `SYSTEM_MESSAGE` (default: None) - Custom system prompt for AI
+- `MAX_LEN_SLACK` (default: 3000) - Max Slack message length
+- `MAX_LEN_OPENAI` (default: 4000) - Max OpenAI context length
+- `KEYWARD_IMAGE` (default: 그려줘) - Keyword to trigger image generation
+- `KEYWARD_EMOJI` (default: 이모지) - Keyword to trigger emoji reactions
 
 ### AWS Resources
 
