@@ -207,15 +207,27 @@ def reply_image(prompt, say, channel, thread_ts, latest_ts):
         n=1,
     )
 
-    print("reply_image: {}".format(response))
+    print("reply_image: model={}, has_url={}, has_b64={}".format(
+        IMAGE_MODEL,
+        response.data[0].url is not None,
+        response.data[0].b64_json is not None,
+    ))
 
-    revised_prompt = response.data[0].revised_prompt
+    revised_prompt = response.data[0].revised_prompt or prompt
+
+    # Some models (e.g., gpt-image-1.5) return b64_json instead of url
     image_url = response.data[0].url
+    b64_json = response.data[0].b64_json
 
-    file_ext = image_url.split(".")[-1].split("?")[0]
-    filename = "{}.{}".format(IMAGE_MODEL, file_ext)
-
-    file = get_image_from_url(image_url)
+    if b64_json:
+        file = base64.b64decode(b64_json)
+        filename = "{}.png".format(IMAGE_MODEL)
+    elif image_url:
+        file_ext = image_url.split(".")[-1].split("?")[0]
+        filename = "{}.{}".format(IMAGE_MODEL, file_ext)
+        file = get_image_from_url(image_url)
+    else:
+        raise ValueError("No image data returned from OpenAI")
 
     response = app.client.files_upload_v2(
         channel=channel, filename=filename, file=file, thread_ts=thread_ts
@@ -225,7 +237,7 @@ def reply_image(prompt, say, channel, thread_ts, latest_ts):
 
     chat_update(say, channel, thread_ts, latest_ts, revised_prompt)
 
-    return image_url
+    return image_url or "b64_image"
 
 
 # Get reactions
