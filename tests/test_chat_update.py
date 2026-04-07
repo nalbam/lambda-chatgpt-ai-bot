@@ -28,7 +28,8 @@ class TestChatUpdateShortMessage:
         )
 
         mock_app_client.chat_update.assert_called_once_with(
-            channel="C_CHAN", ts="ts-1", text="Hello :robot_face:",
+            channel="C_CHAN", ts="ts-1",
+            text="Hello " + handler.BOT_CURSOR,
         )
         mock_say.assert_not_called()
         assert msg == "Hello"
@@ -132,7 +133,7 @@ class TestChatUpdateLongMessageNewlineDelimiter:
 
         # The say() call should include BOT_CURSOR
         say_call = mock_say.call_args
-        assert ":robot_face:" in say_call.kwargs["text"]
+        assert handler.BOT_CURSOR in say_call.kwargs["text"]
 
     def test_say_called_with_thread_ts(self, mock_say, mock_app_client):
         """say() should be called with the original thread_ts."""
@@ -205,7 +206,7 @@ class TestChatUpdateLongMessageNoDelimiter:
         )
 
         say_text = mock_say.call_args.kwargs["text"]
-        assert say_text.endswith(":robot_face:")
+        assert say_text.endswith(handler.BOT_CURSOR)
 
 
 class TestChatUpdateReplaceText:
