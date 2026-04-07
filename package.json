@@ -1,6 +1,7 @@
 {
   "name": "lambda-chatgpt-ai-bot",
   "devDependencies": {
+    "serverless": "^3.38.0",
     "serverless-dotenv-plugin": "^6.0.0",
     "serverless-python-requirements": "^6.1.2"
   }

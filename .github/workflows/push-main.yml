@@ -40,6 +40,11 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Setup Node.js 20 📦
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
       - name: Setup Python 3.12 🐍
         uses: actions/setup-python@v5
         with:
