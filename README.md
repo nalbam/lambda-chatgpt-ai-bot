@@ -68,7 +68,7 @@ SLACK_SIGNING_SECRET="xxxx"
 ```bash
 OPENAI_ORG_ID="org-xxxx"
 OPENAI_API_KEY="sk-xxxx"
-OPENAI_MODEL="gpt-4.1"
+OPENAI_MODEL="gpt-5.4"
 IMAGE_MODEL="dall-e-3"
 ```
 
@@ -113,7 +113,7 @@ curl https://api.openai.com/v1/chat/completions \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $OPENAI_API_KEY" \
   -d '{
-    "model": "gpt-4.1",
+    "model": "gpt-5.4",
     "messages": [
       {
         "role": "system",

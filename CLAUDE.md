@@ -23,7 +23,7 @@ python -m pip install --upgrade -r requirements.txt
 curl https://api.openai.com/v1/chat/completions \
   -H "Authorization: Bearer $OPENAI_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"model": "gpt-4.1", "messages": [{"role": "user", "content": "Hello!"}]}'
+  -d '{"model": "gpt-5.4", "messages": [{"role": "user", "content": "Hello!"}]}'
 ```
 
 ### Deployment
@@ -61,7 +61,7 @@ sls deploy --stage prod --region us-east-1
 Critical configuration in `.env`:
 - `SLACK_BOT_TOKEN`, `SLACK_SIGNING_SECRET` - Slack authentication
 - `OPENAI_API_KEY`, `OPENAI_ORG_ID` - OpenAI credentials
-- `OPENAI_MODEL` (default: gpt-4.1) - Chat model selection
+- `OPENAI_MODEL` (default: gpt-5.4) - Chat model selection
 - `IMAGE_MODEL` (default: dall-e-3) - Image generation model
 - `IMAGE_SIZE` (default: 1024x1024) - Generated image size
 - `DYNAMODB_TABLE_NAME` - Conversation storage table
@@ -82,7 +82,7 @@ Critical configuration in `.env`:
 ### Deployment Pipeline
 
 GitHub Actions workflow (`.github/workflows/push-main.yml`):
-- Triggers on push to main branch
+- Triggers on push to main branch or `repository_dispatch` event
 - Uses OIDC for AWS authentication
 - Deploys to `dev` stage by default
 - Manages secrets via GitHub Secrets/Variables
