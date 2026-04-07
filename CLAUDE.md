@@ -18,12 +18,12 @@ sls plugin install -n serverless-python-requirements
 sls plugin install -n serverless-dotenv-plugin
 python -m pip install --upgrade -r requirements.txt
 
-# Run tests (no test suite currently - manual testing via Slack)
-# Test OpenAI API connection
-curl https://api.openai.com/v1/chat/completions \
-  -H "Authorization: Bearer $OPENAI_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"model": "gpt-5.4", "messages": [{"role": "user", "content": "Hello!"}]}'
+# Run tests
+pip install -r requirements-dev.txt
+pytest -v
+
+# Run tests with coverage
+pytest --cov=handler --cov-report=term-missing
 ```
 
 ### Deployment
@@ -40,7 +40,7 @@ sls deploy --stage prod --region us-east-1
 
 ### Core Components
 
-**handler.py** (664 lines) - Main Lambda function containing:
+**handler.py** - Main Lambda function containing:
 - Slack event handling via `slack_bolt` framework
 - OpenAI API integration for chat and image generation
 - DynamoDB integration for conversation history (1-hour TTL)
@@ -62,7 +62,7 @@ Critical configuration in `.env`:
 - `SLACK_BOT_TOKEN`, `SLACK_SIGNING_SECRET` - Slack authentication
 - `OPENAI_API_KEY`, `OPENAI_ORG_ID` - OpenAI credentials
 - `OPENAI_MODEL` (default: gpt-5.4) - Chat model selection
-- `IMAGE_MODEL` (default: dall-e-3) - Image generation model
+- `IMAGE_MODEL` (default: gpt-image-1.5) - Image generation model
 - `IMAGE_SIZE` (default: 1024x1024) - Generated image size
 - `DYNAMODB_TABLE_NAME` - Conversation storage table
 - `BOT_CURSOR` (default: :robot_face:) - Loading indicator emoji

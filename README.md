@@ -38,6 +38,7 @@ files:read
 files:write
 im:read
 im:write
+reactions:read
 users:read
 ```
 
@@ -69,7 +70,7 @@ SLACK_SIGNING_SECRET="xxxx"
 OPENAI_ORG_ID="org-xxxx"
 OPENAI_API_KEY="sk-xxxx"
 OPENAI_MODEL="gpt-5.4"
-IMAGE_MODEL="dall-e-3"
+IMAGE_MODEL="gpt-image-1.5"
 ```
 
 ### Optional Settings

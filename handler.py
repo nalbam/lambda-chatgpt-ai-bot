@@ -1,6 +1,5 @@
 import boto3
 from botocore.exceptions import ClientError
-import datetime
 import json
 import os
 import re
@@ -36,24 +35,18 @@ SYSTEM_MESSAGE = os.environ.get("SYSTEM_MESSAGE", "").strip() or None
 MAX_LEN_SLACK = int(os.environ.get("MAX_LEN_SLACK", 3000))
 MAX_LEN_OPENAI = int(os.environ.get("MAX_LEN_OPENAI", 4000))
 
-KEYWORD_IMAGE = os.environ.get("KEYWORD_IMAGE", os.environ.get("KEYWORD_IMAGE", "그려줘")).strip()
-KEYWORD_EMOJI = os.environ.get("KEYWORD_EMOJI", os.environ.get("KEYWORD_EMOJI", "이모지")).strip()
+KEYWORD_IMAGE = os.environ.get("KEYWORD_IMAGE", "그려줘").strip()
+KEYWORD_EMOJI = os.environ.get("KEYWORD_EMOJI", "이모지").strip()
 
 MSG_PREVIOUS = "이전 대화 내용 확인 중... " + BOT_CURSOR
 MSG_IMAGE_DESCRIBE = "이미지 감상 중... " + BOT_CURSOR
 MSG_IMAGE_GENERATE = "이미지 생성 준비 중... " + BOT_CURSOR
-MSG_IMAGE_DRAW = "이미지 그리는 중... " + BOT_CURSOR
-MSG_RESPONSE = "응답 기다리는 중... " + BOT_CURSOR
 
 COMMAND_DESCRIBE = "Describe the image in great detail as if viewing a photo."
 COMMAND_GENERATE = "Convert the above sentence into a command for DALL-E to generate an image within 1000 characters. Just give me a prompt."
 
 CONVERSION_ARRAY = [
     ["**", "*"],
-    # ["#### ", "🔸 "],
-    # ["### ", "🔶 "],
-    # ["## ", "🟠 "],
-    # ["# ", "🟡 "],
 ]
 
 
@@ -77,39 +70,6 @@ openai = OpenAI(
     organization=OPENAI_ORG_ID if OPENAI_ORG_ID and OPENAI_ORG_ID != "None" else None,
     api_key=OPENAI_API_KEY,
 )
-
-
-# Get the context from DynamoDB
-def get_context(thread_ts, user, default=""):
-    if thread_ts is None:
-        item = table.get_item(Key={"id": user}).get("Item")
-    else:
-        item = table.get_item(Key={"id": thread_ts}).get("Item")
-    return (item["conversation"]) if item else (default)
-
-
-# Put the context in DynamoDB
-def put_context(thread_ts, user, conversation=""):
-    expire_at = int(time.time()) + 3600  # 1h
-    expire_dt = datetime.datetime.fromtimestamp(expire_at).isoformat()
-    if thread_ts is None:
-        table.put_item(
-            Item={
-                "id": user,
-                "conversation": conversation,
-                "expire_dt": expire_dt,
-                "expire_at": expire_at,
-            }
-        )
-    else:
-        table.put_item(
-            Item={
-                "id": thread_ts,
-                "conversation": conversation,
-                "expire_dt": expire_dt,
-                "expire_at": expire_at,
-            }
-        )
 
 
 # Replace text
@@ -514,8 +474,6 @@ def image_generate(say: Say, thread_ts, content, channel, client_msg_id, message
 
         print("image_generate: {}".format(message))
 
-        # app.client.chat_delete(channel=channel, ts=latest_ts)
-
     except Exception as e:
         print("image_generate: OpenAI Model: {}".format(IMAGE_MODEL))
         print("image_generate: Error handling message: {}".format(e))
@@ -624,10 +582,6 @@ def handle_mention(body: dict, say: Say):
 
     event = body["event"]
 
-    # if "bot_id" in event:
-    #     # Ignore messages from the bot itself
-    #     return
-
     thread_ts = event["thread_ts"] if "thread_ts" in event else event["ts"]
     prompt = re.sub(f"<@{bot_id}>", "", event["text"]).strip()
     channel = event["channel"]
@@ -693,14 +647,12 @@ def lambda_handler(event, context):
     # Atomic duplicate execution prevention using conditional write
     token = body["event"]["client_msg_id"]
     expire_at = int(time.time()) + 3600  # 1h
-    expire_dt = datetime.datetime.fromtimestamp(expire_at).isoformat()
 
     try:
         table.put_item(
             Item={
                 "id": token,
                 "conversation": body["event"]["text"],
-                "expire_dt": expire_dt,
                 "expire_at": expire_at,
             },
             ConditionExpression="attribute_not_exists(id)",
