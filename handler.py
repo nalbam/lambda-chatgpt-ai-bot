@@ -72,6 +72,18 @@ openai = OpenAI(
 )
 
 
+# Set assistant thread status (typing indicator)
+def set_thread_status(channel, thread_ts, status=""):
+    try:
+        app.client.assistant_threads_setStatus(
+            channel_id=channel,
+            thread_ts=thread_ts,
+            status=status,
+        )
+    except Exception as e:
+        print("set_thread_status: {}".format(e))
+
+
 # Replace text
 def replace_text(text):
     for old, new in CONVERSION_ARRAY:
@@ -314,6 +326,9 @@ def conversations_replies(channel, ts, client_msg_id, messages=None, message_typ
 def conversation(say: Say, thread_ts, content, channel, user, client_msg_id, message_type=None):
     print("conversation: {}".format(json.dumps(content)))
 
+    # Set typing indicator
+    set_thread_status(channel, thread_ts, "응답 생성 중...")
+
     # Keep track of the latest message timestamp
     result = say(text=BOT_CURSOR, thread_ts=thread_ts)
     latest_ts = result["ts"]
@@ -368,6 +383,9 @@ def conversation(say: Say, thread_ts, content, channel, user, client_msg_id, mes
 # Handle the image generation
 def image_generate(say: Say, thread_ts, content, channel, client_msg_id, message_type=None):
     print("image_generate: {}".format(content))
+
+    # Set typing indicator
+    set_thread_status(channel, thread_ts, "이미지 생성 중...")
 
     # Keep track of the latest message timestamp
     result = say(text=BOT_CURSOR, thread_ts=thread_ts)
