@@ -69,8 +69,8 @@ Critical configuration in `.env`:
 - `SYSTEM_MESSAGE` (default: None) - Custom system prompt for AI
 - `MAX_LEN_SLACK` (default: 3000) - Max Slack message length
 - `MAX_LEN_OPENAI` (default: 4000) - Max OpenAI context length
-- `KEYWARD_IMAGE` (default: 그려줘) - Keyword to trigger image generation
-- `KEYWARD_EMOJI` (default: 이모지) - Keyword to trigger emoji reactions
+- `KEYWORD_IMAGE` (default: 그려줘) - Keyword to trigger image generation
+- `KEYWORD_EMOJI` (default: 이모지) - Keyword to trigger emoji reactions
 
 ### AWS Resources
 

@@ -1,9 +1,9 @@
 import boto3
+from botocore.exceptions import ClientError
 import datetime
 import json
 import os
 import re
-import sys
 import time
 import base64
 import requests
@@ -27,17 +27,17 @@ OPENAI_ORG_ID = os.environ["OPENAI_ORG_ID"].strip()
 OPENAI_API_KEY = os.environ["OPENAI_API_KEY"].strip()
 OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-5.4").strip()
 
-IMAGE_MODEL = os.environ.get("IMAGE_MODEL", "dall-e-3").strip()
+IMAGE_MODEL = os.environ.get("IMAGE_MODEL", "gpt-image-1.5").strip()
 IMAGE_SIZE = os.environ.get("IMAGE_SIZE", "1024x1024").strip()
 
 # Set up System messages
-SYSTEM_MESSAGE = os.environ.get("SYSTEM_MESSAGE", "None").strip()
+SYSTEM_MESSAGE = os.environ.get("SYSTEM_MESSAGE", "").strip() or None
 
 MAX_LEN_SLACK = int(os.environ.get("MAX_LEN_SLACK", 3000))
 MAX_LEN_OPENAI = int(os.environ.get("MAX_LEN_OPENAI", 4000))
 
-KEYWARD_IMAGE = os.environ.get("KEYWARD_IMAGE", "그려줘").strip()
-KEYWARD_EMOJI = os.environ.get("KEYWARD_EMOJI", "이모지").strip()
+KEYWORD_IMAGE = os.environ.get("KEYWORD_IMAGE", os.environ.get("KEYWORD_IMAGE", "그려줘")).strip()
+KEYWORD_EMOJI = os.environ.get("KEYWORD_EMOJI", os.environ.get("KEYWORD_EMOJI", "이모지")).strip()
 
 MSG_PREVIOUS = "이전 대화 내용 확인 중... " + BOT_CURSOR
 MSG_IMAGE_DESCRIBE = "이미지 감상 중... " + BOT_CURSOR
@@ -74,7 +74,7 @@ table = dynamodb.Table(DYNAMODB_TABLE_NAME)
 
 # Initialize OpenAI
 openai = OpenAI(
-    organization=OPENAI_ORG_ID if OPENAI_ORG_ID != "None" else None,
+    organization=OPENAI_ORG_ID if OPENAI_ORG_ID and OPENAI_ORG_ID != "None" else None,
     api_key=OPENAI_API_KEY,
 )
 
@@ -123,21 +123,26 @@ def replace_text(text):
 def chat_update(say, channel, thread_ts, latest_ts, message="", continue_thread=False):
     # print("chat_update: {}".format(message))
 
-    if sys.getsizeof(message) > MAX_LEN_SLACK:
+    if len(message) > MAX_LEN_SLACK:
         split_key = "\n\n"
         if "```" in message:
             split_key = "```"
 
         parts = message.split(split_key)
 
-        last_one = parts.pop()
-
-        if len(parts) % 2 == 0:
-            text = split_key.join(parts) + split_key
-            message = last_one
+        # Fallback: force split at MAX_LEN_SLACK if no split point found
+        if len(parts) <= 1:
+            text = message[:MAX_LEN_SLACK]
+            message = message[MAX_LEN_SLACK:]
         else:
-            text = split_key.join(parts)
-            message = split_key + last_one
+            last_one = parts.pop()
+
+            if len(parts) % 2 == 0:
+                text = split_key.join(parts) + split_key
+                message = last_one
+            else:
+                text = split_key.join(parts)
+                message = split_key + last_one
 
         text = replace_text(text)
 
@@ -237,15 +242,15 @@ def get_reactions(reactions):
                 if reaction_user not in reaction_users_cache:
                     reaction_user_info = app.client.users_info(user=reaction_user)
                     reaction_users_cache[reaction_user] = (
-                        reaction_user_info.get("user")
-                        .get("profile")
-                        .get("display_name")
+                        reaction_user_info.get("user", {})
+                        .get("profile", {})
+                        .get("display_name", "Unknown")
                     )
                 reaction_map[reaction_name].append(reaction_users_cache[reaction_user])
         reaction_text = ""
         for reaction_name, reaction_users in reaction_map.items():
             reaction_text += "[{} '{}' reaction users: {}] ".format(
-                KEYWARD_EMOJI, reaction_name, ",".join(reaction_users)
+                KEYWORD_EMOJI, reaction_name, ",".join(reaction_users)
             )
         return reaction_text
     except Exception as e:
@@ -254,7 +259,9 @@ def get_reactions(reactions):
 
 
 # Get thread messages using conversations.replies API method
-def conversations_replies(channel, ts, client_msg_id, messages=[], type=""):
+def conversations_replies(channel, ts, client_msg_id, messages=None, message_type=""):
+    if messages is None:
+        messages = []
     try:
         response = app.client.conversations_replies(channel=channel, ts=ts)
 
@@ -268,10 +275,16 @@ def conversations_replies(channel, ts, client_msg_id, messages=[], type=""):
             )
 
         res_messages = response.get("messages", [])
+
+        if not res_messages:
+            return messages
+
         first_ts = str(res_messages[0].get("ts"))
 
         res_messages.reverse()
         res_messages.pop(0)  # remove the first message
+
+        users_cache = {}
 
         for message in res_messages:
             if message.get("client_msg_id", "") == client_msg_id:
@@ -282,7 +295,7 @@ def conversations_replies(channel, ts, client_msg_id, messages=[], type=""):
                 role = "assistant"
 
             # prompt 에 이모지 키워드가 있고, 첫번째 메시지에 리액션이 있으면 리액션을 추가
-            if type == "emoji" and first_ts == str(message.get("ts")):
+            if message_type == "emoji" and first_ts == str(message.get("ts")):
                 reactions = get_reactions(message.get("reactions", []))
                 if reactions != "":
                     messages.append(
@@ -292,9 +305,16 @@ def conversations_replies(channel, ts, client_msg_id, messages=[], type=""):
                         }
                     )
 
-            # 메세지에 유저 이름을 추가
-            user_info = app.client.users_info(user=message.get("user"))
-            user_name = user_info.get("user").get("profile").get("display_name")
+            # 메세지에 유저 이름을 추가 (cached)
+            msg_user = message.get("user")
+            if msg_user not in users_cache:
+                user_info = app.client.users_info(user=msg_user)
+                users_cache[msg_user] = (
+                    user_info.get("user", {})
+                    .get("profile", {})
+                    .get("display_name", "Unknown")
+                )
+            user_name = users_cache[msg_user]
             content = "{}: {}".format(user_name, message.get("text", ""))
 
             messages.append(
@@ -304,22 +324,14 @@ def conversations_replies(channel, ts, client_msg_id, messages=[], type=""):
                 }
             )
 
-            # print("conversations_replies: messages size: {}".format(sys.getsizeof(messages)))
+            # print("conversations_replies: messages size: {}".format(len(str(messages))))
 
-            if sys.getsizeof(messages) > MAX_LEN_OPENAI:
+            if len(str(messages)) > MAX_LEN_OPENAI:
                 messages.pop(0)  # remove the oldest message
                 break
 
     except Exception as e:
         print("conversations_replies: {}".format(e))
-
-    if SYSTEM_MESSAGE != "None":
-        messages.append(
-            {
-                "role": "system",
-                "content": SYSTEM_MESSAGE,
-            }
-        )
 
     print("conversations_replies: {}".format(messages))
 
@@ -327,7 +339,7 @@ def conversations_replies(channel, ts, client_msg_id, messages=[], type=""):
 
 
 # Handle the chatgpt conversation
-def conversation(say: Say, thread_ts, content, channel, user, client_msg_id, type=None):
+def conversation(say: Say, thread_ts, content, channel, user, client_msg_id, message_type=None):
     print("conversation: {}".format(json.dumps(content)))
 
     # Keep track of the latest message timestamp
@@ -335,22 +347,33 @@ def conversation(say: Say, thread_ts, content, channel, user, client_msg_id, typ
     latest_ts = result["ts"]
 
     messages = []
+
+    # Add system message for all conversations
+    if SYSTEM_MESSAGE is not None:
+        messages.append(
+            {
+                "role": "system",
+                "content": SYSTEM_MESSAGE,
+            }
+        )
+
+    # Get the thread messages
+    if thread_ts is not None:
+        chat_update(say, channel, thread_ts, latest_ts, MSG_PREVIOUS)
+
+        thread_messages = conversations_replies(
+            channel, thread_ts, client_msg_id, [], message_type
+        )
+
+        thread_messages = thread_messages[::-1]  # reversed
+        messages.extend(thread_messages)
+
     messages.append(
         {
             "role": "user",
             "content": content,
         },
     )
-
-    # Get the thread messages
-    if thread_ts != None:
-        chat_update(say, channel, thread_ts, latest_ts, MSG_PREVIOUS)
-
-        messages = conversations_replies(
-            channel, thread_ts, client_msg_id, messages, type
-        )
-
-        messages = messages[::-1]  # reversed
 
     # Send the prompt to ChatGPT
     try:
@@ -365,13 +388,13 @@ def conversation(say: Say, thread_ts, content, channel, user, client_msg_id, typ
         print("conversation: Error handling message: {}".format(e))
         print("conversation: OpenAI Model: {}".format(OPENAI_MODEL))
 
-        message = f"```{e}```"
+        message = "죄송합니다. 요청을 처리하는 중 오류가 발생했습니다. 다시 시도해 주세요."
 
         chat_update(say, channel, thread_ts, latest_ts, message)
 
 
 # Handle the image generation
-def image_generate(say: Say, thread_ts, content, channel, client_msg_id, type=None):
+def image_generate(say: Say, thread_ts, content, channel, client_msg_id, message_type=None):
     print("image_generate: {}".format(content))
 
     # Keep track of the latest message timestamp
@@ -383,10 +406,10 @@ def image_generate(say: Say, thread_ts, content, channel, client_msg_id, type=No
     prompts = []
 
     # Get the thread messages
-    if thread_ts != None:
+    if thread_ts is not None:
         chat_update(say, channel, thread_ts, latest_ts, MSG_PREVIOUS)
 
-        replies = conversations_replies(channel, thread_ts, client_msg_id, [], type)
+        replies = conversations_replies(channel, thread_ts, client_msg_id, [], message_type)
 
         replies = replies[::-1]  # reversed
 
@@ -400,13 +423,14 @@ def image_generate(say: Say, thread_ts, content, channel, client_msg_id, type=No
     if len(content) > 1:
         chat_update(say, channel, thread_ts, latest_ts, MSG_IMAGE_DESCRIBE)
 
-        content[0]["text"] = COMMAND_DESCRIBE
+        # Build describe request without mutating original content
+        describe_content = [{"type": "text", "text": COMMAND_DESCRIBE}] + content[1:]
 
         messages = []
         messages.append(
             {
                 "role": "user",
-                "content": content,
+                "content": describe_content,
             },
         )
 
@@ -465,6 +489,10 @@ def image_generate(say: Say, thread_ts, content, channel, client_msg_id, type=No
         print("image_generate: OpenAI Model: {}".format(OPENAI_MODEL))
         print("image_generate: Error handling message: {}".format(e))
 
+        message = "죄송합니다. 이미지 프롬프트 준비 중 오류가 발생했습니다. 다시 시도해 주세요."
+        chat_update(say, channel, thread_ts, latest_ts, message)
+        return
+
     # Generate the image
     try:
         print("image_generate: {}".format(prompt))
@@ -480,7 +508,7 @@ def image_generate(say: Say, thread_ts, content, channel, client_msg_id, type=No
         print("image_generate: OpenAI Model: {}".format(IMAGE_MODEL))
         print("image_generate: Error handling message: {}".format(e))
 
-        message = f"```{e}```"
+        message = "죄송합니다. 이미지 생성 중 오류가 발생했습니다. 다시 시도해 주세요."
 
         chat_update(say, channel, thread_ts, latest_ts, message)
 
@@ -491,7 +519,7 @@ def get_image_from_url(image_url, token=None):
     if token:
         headers["Authorization"] = f"Bearer {token}"
 
-    response = requests.get(image_url, headers=headers)
+    response = requests.get(image_url, headers=headers, timeout=10)
 
     if response.status_code == 200:
         return response.content
@@ -531,19 +559,23 @@ def replace_emoji_pattern(text):
 
 # Extract content from the message
 def content_from_message(prompt, event, user=None):
-    type = "text"
+    message_type = "text"
 
-    if KEYWARD_IMAGE in prompt:
-        type = "image"
-    elif KEYWARD_EMOJI in prompt:
-        type = "emoji"
+    if prompt.endswith(KEYWORD_IMAGE):
+        message_type = "image"
+    elif prompt.endswith(KEYWORD_EMOJI) or prompt.startswith(KEYWORD_EMOJI):
+        message_type = "emoji"
         prompt = replace_emoji_pattern(prompt)
 
-    if user != None:
+    if user is not None:
         user_info = app.client.users_info(user=user)
         print("user_info: {}".format(user_info))
 
-        user_name = user_info.get("user").get("profile").get("display_name")
+        user_name = (
+            user_info.get("user", {})
+            .get("profile", {})
+            .get("display_name", "Unknown")
+        )
 
         text = "{}: {}".format(user_name, prompt)
     else:
@@ -570,7 +602,7 @@ def content_from_message(prompt, event, user=None):
                         }
                     )
 
-    return content, type
+    return content, message_type
 
 
 # Handle the app_mention event
@@ -590,12 +622,12 @@ def handle_mention(body: dict, say: Say):
     user = event["user"]
     client_msg_id = event["client_msg_id"]
 
-    content, type = content_from_message(prompt, event, user)
+    content, message_type = content_from_message(prompt, event, user)
 
-    if type == "image":
-        image_generate(say, thread_ts, content, channel, client_msg_id, type)
+    if message_type == "image":
+        image_generate(say, thread_ts, content, channel, client_msg_id, message_type)
     else:
-        conversation(say, thread_ts, content, channel, user, client_msg_id, type)
+        conversation(say, thread_ts, content, channel, user, client_msg_id, message_type)
 
 
 # Handle the DM (direct message) event
@@ -615,10 +647,10 @@ def handle_message(body: dict, say: Say):
     user = event["user"]
     client_msg_id = event["client_msg_id"]
 
-    content, type = content_from_message(prompt, event, None)
+    content, message_type = content_from_message(prompt, event, None)
 
     # Use thread_ts=None for regular messages, and user ID for DMs
-    if type == "image":
+    if message_type == "image":
         image_generate(say, thread_ts, content, channel, client_msg_id)
     else:
         conversation(say, thread_ts, content, channel, user, client_msg_id)
@@ -646,19 +678,30 @@ def lambda_handler(event, context):
             "body": json.dumps({"status": "Success"}),
         }
 
-    # Get the context from DynamoDB
+    # Atomic duplicate execution prevention using conditional write
     token = body["event"]["client_msg_id"]
-    prompt = get_context(token, body["event"]["user"])
+    expire_at = int(time.time()) + 3600  # 1h
+    expire_dt = datetime.datetime.fromtimestamp(expire_at).isoformat()
 
-    if prompt != "":
-        return {
-            "statusCode": 200,
-            "headers": {"Content-type": "application/json"},
-            "body": json.dumps({"status": "Success"}),
-        }
-
-    # Put the context in DynamoDB
-    put_context(token, body["event"]["user"], body["event"]["text"])
+    try:
+        table.put_item(
+            Item={
+                "id": token,
+                "conversation": body["event"]["text"],
+                "expire_dt": expire_dt,
+                "expire_at": expire_at,
+            },
+            ConditionExpression="attribute_not_exists(id)",
+        )
+    except ClientError as e:
+        if e.response["Error"]["Code"] == "ConditionalCheckFailedException":
+            # Already processed by another Lambda instance
+            return {
+                "statusCode": 200,
+                "headers": {"Content-type": "application/json"},
+                "body": json.dumps({"status": "Success"}),
+            }
+        raise
 
     # Handle the event
     return handler.handle(event, context)
