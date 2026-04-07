@@ -55,6 +55,11 @@ resources:
           - Key: Project
             Value: ${self:provider.environment.BASE_NAME}
 
+custom:
+  pythonRequirements:
+    dockerizePip: true
+    dockerImage: public.ecr.aws/sam/build-python3.11:latest-arm64
+
 plugins:
   - serverless-python-requirements
   - serverless-dotenv-plugin
