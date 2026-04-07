@@ -3,7 +3,7 @@ service: lambda-chatgpt-ai-bot
 provider:
   name: aws
   region: us-east-1
-  runtime: python3.11
+  runtime: python3.12
   stage: ${opt:stage, 'dev'}
   memorySize: 5120
   timeout: 60
