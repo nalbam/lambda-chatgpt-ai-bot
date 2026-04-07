@@ -1,5 +1,3 @@
-# org: nalbam
-app: lambda-chatgpt-ai-bot
 service: lambda-chatgpt-ai-bot
 provider:
   name: aws
@@ -10,12 +8,18 @@ provider:
   timeout: 60
   environment:
     BASE_NAME: chatgpt-ai-bot
-  iamRoleStatements:
-    - Effect: Allow
-      Action:
-        - dynamodb:*
-      Resource:
-        - "arn:aws:dynamodb:*:*:table/${self:provider.environment.BASE_NAME}-*"
+  iam:
+    role:
+      name: chatgpt-ai-bot
+      statements:
+        - Effect: Allow
+          Action:
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:Query
+          Resource:
+            - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.BASE_NAME}-*"
+            - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.BASE_NAME}-*/index/*"
 
 functions:
   mention:
