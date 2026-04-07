@@ -9,18 +9,15 @@ provider:
   timeout: 60
   environment:
     BASE_NAME: chatgpt-ai-bot
-  iam:
-    role:
-      name: chatgpt-ai-bot
-      statements:
-        - Effect: Allow
-          Action:
-            - dynamodb:GetItem
-            - dynamodb:PutItem
-            - dynamodb:Query
-          Resource:
-            - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.BASE_NAME}-*"
-            - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.BASE_NAME}-*/index/*"
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:Query
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.BASE_NAME}-*"
+        - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.BASE_NAME}-*/index/*"
 
 functions:
   mention:

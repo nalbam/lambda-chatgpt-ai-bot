@@ -31,9 +31,7 @@
         "iam:*"
       ],
       "Resource": [
-        "arn:aws:iam::*:role/lambda-chatgpt-ai-bot-*",
-        "arn:aws:iam::*:role/chatgpt-ai-bot-*",
-        "arn:aws:iam::*:role/chatgpt-ai-bot"
+        "arn:aws:iam::*:role/lambda-chatgpt-ai-bot-*"
       ]
     },
     {
