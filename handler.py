@@ -25,7 +25,7 @@ DYNAMODB_TABLE_NAME = os.environ.get("DYNAMODB_TABLE_NAME", "chatgpt-ai-bot-dev"
 # Set up ChatGPT API credentials
 OPENAI_ORG_ID = os.environ["OPENAI_ORG_ID"].strip()
 OPENAI_API_KEY = os.environ["OPENAI_API_KEY"].strip()
-OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-4.1").strip()
+OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-5.4").strip()
 
 IMAGE_MODEL = os.environ.get("IMAGE_MODEL", "dall-e-3").strip()
 IMAGE_SIZE = os.environ.get("IMAGE_SIZE", "1024x1024").strip()
